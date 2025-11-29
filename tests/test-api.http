@@ -1,0 +1,173 @@
+@baseUrl=http://localhost:3000
+@token=
+
+###
+# @name Register
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{
+  "email": "admin@mail.com",
+  "password": "p@ssw0rd"
+}
+
+###
+# @name Login
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@mail.com",
+  "password": "p@ssw0rd"
+}
+
+###
+@token = {{Login.response.body.accessToken}}
+
+###
+# @name CreateArticle
+POST {{baseUrl}}/api/articles
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+    "title":"My Article 2",
+    "content":"My Article 2",
+    "slug":"my-article-2",
+    "published":true,
+    "authorId":"e4e4eb64-7166-45cd-a6c3-86c0841b001f"
+}
+
+### 
+PUT {{baseUrl}}/api/articles/559ed545-60aa-4052-b37e-0d30f4ab31de
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+    "title":"My Article 2",
+    "content":"My Article 2",
+    "slug":"my-article-2",
+    "published":true,
+    "authorId":"e4e4eb64-7166-45cd-a6c3-86c0841b001f",
+    "fileId": "be24adca-7cef-40a8-8da8-3039da59d455"
+}
+
+###
+# @name GetArticles
+GET {{baseUrl}}/api/articles
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+###
+# ⚠️ FILE UPLOAD NOTE:
+# VSCode REST Client has limited support for file uploads.
+# File upload requests may fail with "incorrect MIME type/boundary" error.
+#
+# ✅ WORKING ALTERNATIVES:
+# 1. Use the automated test script: cd tests && ./test-upload.sh
+# 2. Use curl commands - see FILE_UPLOAD_TESTS.md
+# 3. Example curl command:
+curl --location '{{baseUrl}}/api/files/upload?folder=article-covers&isPublic=true' \
+--header 'Authorization: Bearer {{token}}' \
+--form 'file=@image-test-1.jpg'
+  
+###
+# @name UploadFile (May not work - use curl instead)
+POST {{baseUrl}}/api/files/upload?folder=article-covers&isPublic=true
+Authorization: Bearer {{token}}
+Content-Type: multipart/form-data
+
+--boundary
+Content-Disposition: form-data; name="file"; filename="image-test-1.jpg"
+Content-Type: image/jpeg
+
+< ./image-test-1.jpg
+--boundary--
+
+###
+# @name UploadMultipleFiles (May not work - use curl instead)
+POST {{baseUrl}}/api/files/upload-multiple?folder=article-covers&isPublic=true
+Authorization: Bearer {{token}}
+Content-Type: multipart/form-data
+
+--boundary
+Content-Disposition: form-data; name="files"; filename="image-test-1.jpg"
+Content-Type: image/jpeg
+
+< ./image-test-1.jpg
+--boundary
+Content-Disposition: form-data; name="files"; filename="image-test-2.jpg"
+Content-Type: image/jpeg
+
+< ./image-test-2.jpg
+--boundary--
+
+###
+# Set file ID manually from curl upload or use a known file ID
+@fileId = 8ce8666c-595a-47d3-b9e8-a14468bedf9f
+
+###
+# @name GetFileMetadata
+GET {{baseUrl}}/api/files/{{fileId}}
+
+###
+# @name ListUserFiles
+GET {{baseUrl}}/api/files?limit=10&offset=0&search=image-test-2.jpg
+Authorization: Bearer {{token}}
+
+###
+# @name DownloadFile
+GET {{baseUrl}}/api/files/{{fileId}}/download
+
+###
+# @name DeleteFile
+DELETE {{baseUrl}}/api/files/{{fileId}}
+Authorization: Bearer {{token}}
+
+###
+# @name CopyFile
+POST {{baseUrl}}/api/files/{{fileId}}/copy
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "folder": "backup"
+}
+
+###
+# @name CreateArticleWithCoverImage
+POST {{baseUrl}}/api/articles
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+    "title":"My Article with Cover",
+    "content":"This article has a cover image",
+    "slug":"my-article-with-cover",
+    "published":true,
+    "coverImageId": "{{fileId}}"
+}
+
+###
+# ⚠️ ARTICLE COVER IMAGE UPLOAD NOTE:
+# VSCode REST Client doesn't handle file uploads properly.
+#
+# ✅ USE THIS CURL COMMAND INSTEAD:
+@articleId = 559ed545-60aa-4052-b37e-0d30f4ab31de
+
+curl --location 'http://localhost:3000/api/articles/{{articleId}}/cover-image' \
+--header 'Authorization: Bearer {{token}}' \
+--form 'file=@"./image-test-1.jpg"'
+
+###
+# @name UploadCoverImageDirectly (Will fail - use curl above)
+POST {{baseUrl}}/api/articles/{{articleId}}/cover-image
+Authorization: Bearer {{token}}
+Content-Type: multipart/form-data
+
+--boundary
+Content-Disposition: form-data; name="file"; filename="image-test-2.jpg"
+Content-Type: image/jpeg
+
+< ./image-test-2.jpg
+--boundary--
