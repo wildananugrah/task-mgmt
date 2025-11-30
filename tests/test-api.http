@@ -7,7 +7,7 @@ POST {{baseUrl}}/api/auth/register
 Content-Type: application/json
 
 {
-  "email": "admin@mail.com",
+  "email": "admin2@mail.com",
   "password": "p@ssw0rd"
 }
 
@@ -17,7 +17,7 @@ POST {{baseUrl}}/api/auth/login
 Content-Type: application/json
 
 {
-  "email": "admin@mail.com",
+  "email": "admin2@mail.com",
   "password": "p@ssw0rd"
 }
 
