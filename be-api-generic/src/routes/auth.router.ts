@@ -81,18 +81,6 @@ export class AuthRouter {
       const accessToken = generateAccessToken(payload);
       const refreshToken = generateRefreshToken(payload);
 
-      // Store refresh token
-      const expiresAt = new Date();
-      expiresAt.setDate(expiresAt.getDate() + 7); // 7 days
-
-      await prisma.refreshToken.create({
-        data: {
-          token: refreshToken,
-          userId: user.id,
-          expiresAt,
-        },
-      });
-
       // Log activity
       await prisma.activityLog.create({
         data: {
@@ -167,18 +155,6 @@ export class AuthRouter {
       const accessToken = generateAccessToken(payload);
       const refreshToken = generateRefreshToken(payload);
 
-      // Store refresh token
-      const expiresAt = new Date();
-      expiresAt.setDate(expiresAt.getDate() + 7); // 7 days
-
-      await prisma.refreshToken.create({
-        data: {
-          token: refreshToken,
-          userId: user.id,
-          expiresAt,
-        },
-      });
-
       // Log activity
       await prisma.activityLog.create({
         data: {
@@ -214,33 +190,17 @@ export class AuthRouter {
       const body = await req.json();
       const { refreshToken } = refreshTokenSchema.parse(body);
 
-      // Verify refresh token
+      // Verify refresh token (this validates signature and expiration)
       const payload = verifyRefreshToken(refreshToken);
 
-      // Check if refresh token exists in database
-      const storedToken = await prisma.refreshToken.findUnique({
-        where: { token: refreshToken },
-        include: { user: true },
+      // Fetch user from database to check if still active
+      const user = await prisma.user.findUnique({
+        where: { id: payload.userId },
       });
 
-      if (!storedToken) {
+      if (!user) {
         return new Response(
-          JSON.stringify({ error: 'Invalid refresh token' }),
-          {
-            status: 401,
-            headers: { 'Content-Type': 'application/json' },
-          }
-        );
-      }
-
-      // Check if refresh token is expired
-      if (new Date() > storedToken.expiresAt) {
-        await prisma.refreshToken.delete({
-          where: { id: storedToken.id },
-        });
-
-        return new Response(
-          JSON.stringify({ error: 'Refresh token expired' }),
+          JSON.stringify({ error: 'User not found' }),
           {
             status: 401,
             headers: { 'Content-Type': 'application/json' },
@@ -249,7 +209,7 @@ export class AuthRouter {
       }
 
       // Check if user is still active
-      if (!storedToken.user.isActive) {
+      if (!user.isActive) {
         return new Response(
           JSON.stringify({ error: 'Account is disabled' }),
           {
@@ -259,17 +219,18 @@ export class AuthRouter {
         );
       }
 
-      // Generate new access token
+      // Generate new tokens (token rotation for better security)
       const newPayload = {
-        userId: storedToken.user.id,
-        email: storedToken.user.email,
-        role: storedToken.user.role,
+        userId: user.id,
+        email: user.email,
+        role: user.role,
       };
 
       const accessToken = generateAccessToken(newPayload);
+      const newRefreshToken = generateRefreshToken(newPayload);
 
       return new Response(
-        JSON.stringify({ accessToken }),
+        JSON.stringify({ accessToken, refreshToken: newRefreshToken }),
         {
           status: 200,
           headers: { 'Content-Type': 'application/json' },
@@ -282,13 +243,9 @@ export class AuthRouter {
 
   async logout(req: Request): Promise<Response> {
     try {
-      const body = await req.json();
-      const { refreshToken } = refreshTokenSchema.parse(body);
-
-      // Delete refresh token
-      await prisma.refreshToken.deleteMany({
-        where: { token: refreshToken },
-      });
+      // In stateless authentication, logout is handled client-side
+      // by clearing tokens from localStorage
+      // No server-side state to clean up
 
       return new Response(
         JSON.stringify({ message: 'Logged out successfully' }),

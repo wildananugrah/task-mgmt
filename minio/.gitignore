@@ -1,0 +1,12 @@
+# Minio data and config
+data/
+config/
+*.log
+
+# Backup files
+*.tar.gz
+*.zip
+
+# OS files
+.DS_Store
+Thumbs.db

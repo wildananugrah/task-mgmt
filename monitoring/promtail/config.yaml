@@ -1,0 +1,42 @@
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+
+scrape_configs:
+  # Scrape be-api-generic logs
+  - job_name: be-api-generic
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: be-api-generic
+          app: be-api-generic
+          env: development
+          __path__: /logs/be-api-generic/*.log
+    pipeline_stages:
+      - json:
+          expressions:
+            timestamp: timestamp
+            level: level
+            message: message
+            requestId: requestId
+            userId: userId
+            method: method
+            uri: uri
+            statusCode: statusCode
+            elapsedTime: elapsedTime
+      - labels:
+          level:
+          requestId:
+          userId:
+          method:
+          statusCode:
+      - timestamp:
+          source: timestamp
+          format: RFC3339

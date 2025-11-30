@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  minio:
+    image: minio/minio:latest
+    container_name: task-mgmt-minio
+    ports:
+      - "9000:9000"     # API port
+      - "9001:9001"     # Console port
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin123
+      MINIO_DEFAULT_BUCKETS: task-mgmt-uploads
+    volumes:
+      - ./data:/data
+      - ./config:/root/.minio
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+    networks:
+      app-net: {}
+
+  # Optional: Create bucket automatically
+  minio-setup:
+    image: minio/mc:latest
+    container_name: task-mgmt-minio-setup
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      /usr/bin/mc alias set myminio http://minio:9000 minioadmin minioadmin123;
+      /usr/bin/mc mb --ignore-existing myminio/task-mgmt-uploads;
+      /usr/bin/mc anonymous set public myminio/task-mgmt-uploads/public;
+      /usr/bin/mc anonymous set download myminio/task-mgmt-uploads/private;
+      echo 'Minio setup completed';
+      "
+    networks:
+      app-net: {}
+
+networks:
+  app-net:
+    external: true
+    name: "task-mgmt-net"
+
+volumes:
+  minio_data:
+    driver: local

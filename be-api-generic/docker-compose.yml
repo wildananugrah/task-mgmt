@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: api-generic-app
+    ports:
+      - "3000:3000"
+      - "3001:3001"
+    environment:
+      - DATABASE_URL=postgresql://${DB_USER:-postgres}:${DB_PASS:-postgres}@test-mgmt-db:5432/product_management?schema=public
+      - NODE_ENV=${NODE_ENV:-development}
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET}
+    depends_on:
+      - test-mgmt-db
+    networks:
+      - belajar-net
+    volumes:
+      - ./src:/app/src
+      - ./prisma:/app/prisma
+
+  test-mgmt-db:
+    extends:
+      file: ./database/docker-compose.yml
+      service: test-mgmt-db
+    networks:
+      - belajar-net
+
+volumes:
+  test-mgmt-db:
+
+networks:
+  belajar-net:
+    external: true
+    name: "belajar-net"
