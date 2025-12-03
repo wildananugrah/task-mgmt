@@ -1,6 +1,6 @@
 import logger from '../config/logger';
 import config from '../config';
-import { RequestWithId, getRequestId, getElapsedTime } from './request-id';
+import { type RequestWithId, getRequestId, getElapsedTime } from './request-id';
 import { verifyAccessToken } from '../utils/jwt';
 
 interface LogMetadata {

@@ -1,10 +1,9 @@
 import { v4 as uuidv4 } from 'uuid';
 import * as path from 'path';
-import config, { isMultiProviderMode } from '../config';
+import config from '../config';
 import logger from '../config/logger';
 import prisma from '../config/database';
 import { StorageProviderFactory } from '../providers/storage-provider.factory';
-import { StoragePoolManager } from '../providers/storage-pool.manager';
 
 export interface FileUploadOptions {
   userId?: string;
@@ -29,9 +28,6 @@ export interface UploadedFile {
 
 export class FileStorageService {
   private getBucketName(): string {
-    if (config.STORAGE_PROVIDER === 'aws') {
-      return config.AWS_S3_BUCKET_NAME || '';
-    }
     return config.MINIO_BUCKET_NAME || '';
   }
 
@@ -74,14 +70,6 @@ export class FileStorageService {
         size: fileBuffer.length,
       });
 
-      // Determine provider ID if in multi-provider mode
-      let providerId: string | null = null;
-      if (isMultiProviderMode() && storageProvider instanceof StoragePoolManager) {
-        const poolManager = storageProvider as StoragePoolManager;
-        const providerInfo = poolManager.getCurrentProviderInfo();
-        providerId = providerInfo.providerId;
-      }
-
       // Save file metadata to database
       const fileRecord = await prisma.file.create({
         data: {
@@ -95,7 +83,7 @@ export class FileStorageService {
           isPublic,
           userId,
           metadata: metadata as any,
-          storageProvider: providerId, // Track which provider (null for single mode)
+          storageProvider: 'minio',
         },
       });
 
@@ -104,7 +92,7 @@ export class FileStorageService {
         objectName: uploadResult.key,
         size: fileBuffer.length,
         userId,
-        provider: providerId || config.STORAGE_PROVIDER || 'default',
+        provider: 'minio',
       });
 
       return {
@@ -140,14 +128,6 @@ export class FileStorageService {
         throw new Error('File not found');
       }
 
-      // If multi-provider mode and file has provider info, download from specific provider
-      if (isMultiProviderMode() && file.storageProvider && storageProvider instanceof StoragePoolManager) {
-        const poolManager = storageProvider as StoragePoolManager;
-        const result = await poolManager.downloadFileFromProvider(file.key, file.storageProvider);
-        return result.buffer;
-      }
-
-      // Single provider mode or fallback
       const result = await storageProvider.downloadFile(file.key);
       return result.buffer;
     } catch (error) {
@@ -177,12 +157,7 @@ export class FileStorageService {
       }
 
       // Delete from storage provider
-      if (isMultiProviderMode() && file.storageProvider && storageProvider instanceof StoragePoolManager) {
-        const poolManager = storageProvider as StoragePoolManager;
-        await poolManager.deleteFileFromProvider(file.key, file.storageProvider);
-      } else {
-        await storageProvider.deleteFile(file.key);
-      }
+      await storageProvider.deleteFile(file.key);
 
       // Delete from database
       await prisma.file.delete({
@@ -192,7 +167,7 @@ export class FileStorageService {
       logger.info('File deleted successfully', {
         fileId,
         key: file.key,
-        provider: file.storageProvider || config.STORAGE_PROVIDER || 'default'
+        provider: 'minio'
       });
       return true;
     } catch (error) {

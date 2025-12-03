@@ -1,6 +1,6 @@
 /**
  * Storage Provider Interface
- * Abstraction layer for different storage backends (MinIO, AWS S3, etc.)
+ * Abstraction layer for MinIO storage backend
  */
 
 export interface UploadOptions {

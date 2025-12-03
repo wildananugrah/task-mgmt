@@ -1,4 +1,4 @@
-import { RequestWithId } from '../middleware/request-id';
+import type { RequestWithId } from '../middleware/request-id';
 
 // In-memory metrics storage (consider using a proper metrics library like prom-client for production)
 class MetricsCollector {

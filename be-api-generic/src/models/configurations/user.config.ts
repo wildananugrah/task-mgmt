@@ -178,11 +178,6 @@ export const userConfig: ModelConfig = {
           details: getSafeEntityDetails(user),
         });
       }
-
-      // Clean up related records (except activity logs - keep for audit trail)
-      await prisma.refreshToken.deleteMany({
-        where: { userId: id },
-      });
     },
   },
   relations: {

@@ -5,7 +5,7 @@
 import * as Minio from 'minio';
 import config from '../config';
 import logger from '../config/logger';
-import {
+import type {
   StorageProvider,
   UploadOptions,
   UploadResult,

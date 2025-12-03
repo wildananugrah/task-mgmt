@@ -8,8 +8,7 @@ import logger from './logger';
 import { StorageProviderFactory } from '../providers/storage-provider.factory';
 
 /**
- * Initialize storage provider (MinIO, AWS S3, etc.)
- * This replaces the old MinIO-specific initialization
+ * Initialize storage provider (MinIO)
  */
 export async function initializeStorage(): Promise<void> {
   // Skip initialization if file storage is disabled

@@ -1,7 +1,3 @@
-import { ApolloServer } from '@apollo/server';
-import { startStandaloneServer } from '@apollo/server/standalone';
-import { typeDefs } from './graphql/schema';
-import { resolvers } from './graphql/resolvers';
 import { registerAllModels } from './models/configurations';
 import { ApiRouter } from './routes/api.router';
 import { authRouter } from './routes/auth.router';
@@ -11,7 +7,7 @@ import { handleError } from './middleware/error-handler';
 import config from './config';
 import prisma from './config/database';
 import logger from './config/logger';
-import { RequestWithId, requestIdMiddleware } from './middleware/request-id';
+import { type RequestWithId, requestIdMiddleware } from './middleware/request-id';
 import { httpLogger, createLoggedResponse, logErrorResponse } from './middleware/http-logger';
 import { metricsRouter, metricsCollector } from './routes/metrics.router';
 import { getElapsedTime } from './middleware/request-id';
@@ -24,12 +20,6 @@ registerAllModels();
 
 // Then create the API router after models are registered
 const apiRouter = new ApiRouter();
-
-// Create Apollo Server for GraphQL
-const apolloServer = new ApolloServer({
-  typeDefs,
-  resolvers,
-});
 
 // Main server handler
 const server = Bun.serve({
@@ -111,10 +101,6 @@ const server = Bun.serve({
             'GET /api/auth/me',
           ],
           rest: routes,
-          graphql: {
-            endpoint: 'http://localhost:3001/graphql',
-            playground: 'http://localhost:3001/graphql',
-          },
         };
 
         // Only include file routes if storage is enabled
@@ -192,16 +178,6 @@ const server = Bun.serve({
         }
       }
 
-      // GraphQL endpoint
-      if (pathname === '/graphql') {
-        // For GraphQL, we need to handle it differently
-        // Apollo Server handles its own routing
-        return new Response('GraphQL endpoint - use Apollo Server', {
-          status: 501,
-          headers: corsHeaders,
-        });
-      }
-
       // 404 for unmatched routes
       const notFoundResponse = await createLoggedResponse(
         requestWithId,
@@ -229,20 +205,6 @@ const server = Bun.serve({
   },
 });
 
-// Start Apollo Server for GraphQL
-const startGraphQLServer = async () => {
-  const { url } = await startStandaloneServer(apolloServer, {
-    listen: { port: config.PORT + 1 },
-    context: async ({ req }) => {
-      return {
-        req: req as AuthRequest,
-      };
-    },
-  });
-
-  console.log(`🚀 GraphQL Server ready at ${url}`);
-};
-
 // Initialize database and start servers
 const initialize = async () => {
   try {
@@ -254,7 +216,7 @@ const initialize = async () => {
     // Initialize Storage (if enabled)
     if (config.ENABLE_FILE_STORAGE) {
       await initializeStorage();
-      console.log(`✅ Storage initialized (${config.STORAGE_PROVIDER.toUpperCase()})`);
+      console.log(`✅ Storage initialized (${config?.STORAGE_PROVIDER?.toUpperCase()})`);
       logger.info(`Storage initialized with provider: ${config.STORAGE_PROVIDER}`);
     } else {
       console.log('⚠️  File storage disabled (ENABLE_FILE_STORAGE=false)');
@@ -267,11 +229,7 @@ const initialize = async () => {
     console.log(`📝 Swagger UI: http://localhost:${config.PORT}/api/docs/swagger`);
     console.log(`📊 Metrics: http://localhost:${config.PORT}/metrics`);
     if (config.ENABLE_FILE_STORAGE) {
-      if (config.STORAGE_PROVIDER === 'minio') {
-        console.log(`📁 MinIO Storage: http://${config.MINIO_ENDPOINT}:${config.MINIO_PORT}`);
-      } else if (config.STORAGE_PROVIDER === 'aws') {
-        console.log(`📁 AWS S3 Storage: ${config.AWS_S3_BUCKET_NAME} (${config.AWS_REGION})`);
-      }
+      console.log(`📁 MinIO Storage: http://${config.MINIO_ENDPOINT}:${config.MINIO_PORT}`);
     }
     console.log(`🔒 Environment: ${config.NODE_ENV}`);
     console.log(`📝 Logging to Loki at: ${config.LOKI_URL}`);
@@ -282,13 +240,9 @@ const initialize = async () => {
       lokiUrl: config.LOKI_URL,
     });
 
-    // Start GraphQL server
-    await startGraphQLServer();
-
     // Log available endpoints
     console.log('\n📍 Available endpoints:');
     console.log('  - REST API: http://localhost:' + config.PORT + '/api');
-    console.log('  - GraphQL: http://localhost:' + (config.PORT + 1) + '/graphql');
     console.log('  - Health: http://localhost:' + config.PORT + '/health');
     console.log('  - Metrics: http://localhost:' + config.PORT + '/metrics');
   } catch (error) {

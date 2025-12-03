@@ -67,14 +67,9 @@ const envSchema = z.object({
 
   // File Storage Configuration
   ENABLE_FILE_STORAGE: z.string().default('true').transform(v => v === 'true'),
-  STORAGE_PROVIDER: z.enum(['minio', 'aws', 'gcs']).optional(), // Single provider mode (backward compatible)
+  STORAGE_PROVIDER: z.enum(['minio']).optional().default('minio'),
 
-  // Multi-provider configuration (optional)
-  STORAGE_PROVIDERS: z.string().optional(), // Comma-separated list: "provider1,provider2,provider3"
-  STORAGE_STRATEGY: z.enum(['round-robin', 'random', 'weighted']).optional().default('round-robin'),
-  STORAGE_HEALTH_CHECK_INTERVAL: z.string().optional().default('30000').transform(v => Number(v)),
-
-  // MinIO Configuration (only required if STORAGE_PROVIDER=minio)
+  // MinIO Configuration
   MINIO_ENDPOINT: z.string().optional().default('localhost'),
   MINIO_PORT: z.string().optional().default('9000').transform(v => v ? Number(v) : 9000),
   MINIO_USE_SSL: z.string().optional().default('false').transform(v => v === 'true'),
@@ -83,13 +78,7 @@ const envSchema = z.object({
   MINIO_BUCKET_NAME: z.string().optional().default('task-mgmt-uploads'),
   MINIO_REGION: z.string().optional().default('us-east-1'),
 
-  // AWS S3 Configuration (only required if STORAGE_PROVIDER=aws)
-  AWS_REGION: z.string().optional().default('us-east-1'),
-  AWS_ACCESS_KEY_ID: z.string().optional(),
-  AWS_SECRET_ACCESS_KEY: z.string().optional(),
-  AWS_S3_BUCKET_NAME: z.string().optional().default('task-mgmt-uploads'),
-
-  // File Upload Configuration (optional if ENABLE_FILE_STORAGE=false)
+  // File Upload Configuration
   MAX_FILE_SIZE: z.string().optional().default('10485760').transform(v => v ? Number(v) : 10485760), // 10MB default
   ALLOWED_FILE_TYPES: z.string().optional().default('image/jpeg,image/png,image/gif,application/pdf,text/plain,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'),
   FILE_UPLOAD_PATH: z.string().optional().default('/uploads'),
@@ -106,27 +95,6 @@ export const getApiServers = () => {
     url,
     description: descriptions[index] || 'API Server'
   }));
-};
-
-// Helper to check if multi-provider mode is enabled
-export const isMultiProviderMode = (): boolean => {
-  return !!config.STORAGE_PROVIDERS;
-};
-
-// Helper to get configured storage providers list
-export const getStorageProviders = (): string[] => {
-  if (config.STORAGE_PROVIDERS) {
-    return config.STORAGE_PROVIDERS.split(',').map(p => p.trim()).filter(p => p);
-  }
-  return [];
-};
-
-// Helper to get provider count
-export const getProviderCount = (): number => {
-  if (config.STORAGE_PROVIDERS) {
-    return getStorageProviders().length;
-  }
-  return 1; // Single provider mode
 };
 
 export default config;
