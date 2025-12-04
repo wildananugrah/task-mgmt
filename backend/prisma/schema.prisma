@@ -1,0 +1,85 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// User model for authentication
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  firstName String?
+  lastName  String?
+  role      UserRole @default(USER)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([email])
+  @@map("users")
+  activityLogs ActivityLog[]
+  files File[]
+}
+
+// User roles enum
+enum UserRole {
+  ADMIN
+  MANAGER
+  USER
+  CLIENT
+}
+
+model ActivityLog {
+  id             String   @id @default(uuid())
+  userId         String?
+  user           User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action         String // CREATE, UPDATE, DELETE, LOGIN, etc.
+  entity         String // Product, Order, Category, etc.
+  entityId       String?
+  details        Json? // Additional details about the action
+  ipAddress      String?
+  userAgent      String?
+  requestId      String? // Unique identifier for correlating related activities
+  processingTime Int? // Processing time in milliseconds
+  createdAt      DateTime @default(now())
+
+  @@index([userId])
+  @@index([entity])
+  @@index([action])
+  @@index([requestId])
+  @@map("activity_logs")
+}
+
+// File model for storing file metadata
+model File {
+  id              String    @id @default(uuid())
+  originalName    String
+  fileName        String
+  mimeType        String
+  size            Int
+  bucket          String
+  key             String    @unique // Storage object key
+  url             String    @db.Text
+  isPublic        Boolean   @default(false)
+  userId          String?
+  user            User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  metadata        Json?
+
+  // Storage provider tracking (null for single-provider mode)
+  storageProvider String?   // e.g., "provider1", "minio-primary", etc.
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([key])
+  @@index([isPublic])
+  @@index([storageProvider])
+  @@map("files")
+}
