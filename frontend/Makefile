@@ -11,7 +11,7 @@ run:
 	bun src/server.ts
 
 logs:
-	pm2 logs auth-app
+	pm2 logs task-mgmt-fe-app
 
 list:
 	pm2 list

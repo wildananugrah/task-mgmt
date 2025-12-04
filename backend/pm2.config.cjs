@@ -1,5 +1,5 @@
 module.exports = {
-  name: "api-generic-be-app",
+  name: "task-mgmt-be-app",
   script: "src/server.ts",
   instances: 1, // Bun doesn't support PM2 cluster mode - use 1 instance only
   exec_mode: "fork", // Use fork mode with Bun (not cluster)

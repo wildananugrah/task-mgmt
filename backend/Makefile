@@ -14,7 +14,7 @@ run:
 	bun src/server.ts
 
 log:
-	pm2 logs api-generic-be-app
+	pm2 logs task-mgmt-be-app
 
 list:
 	pm2 list

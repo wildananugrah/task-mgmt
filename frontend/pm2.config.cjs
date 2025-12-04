@@ -1,7 +1,7 @@
 module.exports = {
   apps: [
     {
-      name: "api-generic-fe-app",
+      name: "task-mgmt-fe-app",
       script: "bun",
       args: "run dev",
       cwd: "./",

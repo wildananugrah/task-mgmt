@@ -1,8 +1,8 @@
 services:
 
-  task-mgmt-2-db:
+  task-mgmt-db:
     image: postgres:18
-    container_name: task-mgmt-2-db
+    container_name: task-mgmt-db
     ports:
       - "6440:5432"
     environment:
@@ -10,7 +10,7 @@ services:
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASS}
     volumes:
-      - task-mgmt-2-db:/var/lib/postgresql/data
+      - task-mgmt-db:/var/lib/postgresql/data
       # Mount SQL scripts directory
       - ./scripts:/scripts
     # Apply PostgreSQL optimizations via command-line parameters
@@ -33,9 +33,9 @@ services:
       app-net: {}
 
 volumes:
-  task-mgmt-2-db:
+  task-mgmt-db:
 
 networks:
   app-net:
     external: true
-    name: "task-mgmt-2-net"
+    name: "task-mgmt-net"
